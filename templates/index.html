@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="refresh" content="30">
+    <title>حجز موعد تصليح سيارة</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f7f7f7;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+
+        .container {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 500px;
+        }
+
+        form {
+            display: flex;
+            flex-direction: column;
+        }
+
+        label {
+            margin-bottom: 5px;
+            font-size: 16px;
+            color: #555;
+        }
+
+        input[type="text"], input[type="datetime-local"] {
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 16px;
+            outline: none;
+        }
+
+        input[type="text"]:focus, input[type="datetime-local"]:focus {
+            border-color: #007bff;
+        }
+
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        .message {
+            margin-top: 20px;
+            font-size: 18px;
+            font-weight: bold;
+            padding: 10px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .approved {
+            color: green;
+            background-color: #e7ffe7;
+        }
+
+        .rejected {
+            color: red;
+            background-color: #ffe7e7;
+        }
+
+        .pending {
+            color: orange;
+            background-color: #fff3e0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>حجز موعد تصليح سيارة</h1>
+        
+        <form id="booking-form">
+            <label for="name">اسمك:</label>
+            <input type="text" id="name" name="name" required><br>
+            
+            <label for="car_type">نوع سيارتك:</label>
+            <input type="text" id="car_type" name="car_type" required><br>
+
+            <label for="appointment_time">موعدك:</label>
+            <input type="datetime-local" id="appointment_time" name="appointment_time" required><br>
+
+            <button type="submit">حجز الموعد</button>
+        </form>
+
+        <div id="response-message" class="message"></div>
+    </div>
+
+    <script>
+        document.getElementById('booking-form').addEventListener('submit', function (e) {
+            e.preventDefault();
+
+            const formData = {
+                name: document.getElementById('name').value,
+                car_type: document.getElementById('car_type').value,
+                appointment_time: document.getElementById('appointment_time').value
+            };
+
+            fetch('/book_appointment', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(formData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                const messageDiv = document.getElementById('response-message');
+                messageDiv.textContent = data.message;
+                messageDiv.classList.add('pending');
+            })
+            .catch(error => {
+                const messageDiv = document.getElementById('response-message');
+                messageDiv.textContent = 'حدث خطأ أثناء إرسال الطلب';
+                messageDiv.classList.add('rejected');
+            });
+        });
+    </script>
+</body>
+</html>

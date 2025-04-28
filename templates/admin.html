@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="refresh" content="30">
+    <title>لوحة تحكم الكراج</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            direction: rtl;
+            padding: 20px;
+            background-color: #f7f7f7;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background-color: #fff;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+
+        th, td {
+            padding: 12px;
+            border: 1px solid #ccc;
+            text-align: center;
+        }
+
+        th {
+            background-color: #4CAF50;
+            color: white;
+        }
+
+        select, button {
+            padding: 6px 10px;
+            margin: 2px;
+        }
+
+        button {
+            background-color: #2196F3;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #0b7dda;
+        }
+    </style>
+</head>
+<body>
+    <h1>لوحة تحكم الكراج</h1>
+
+    <form id="admin-form">
+        <table>
+            <thead>
+                <tr>
+                    <th>الاسم</th>
+                    <th>نوع السيارة</th>
+                    <th>الوقت المطلوب</th>
+                    <th>حالة الحجز</th>
+                    <th>التصديق</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for appointment in appointments %}
+                <tr>
+                    <td>{{ appointment[1] }}</td>
+                    <td>{{ appointment[2] }}</td>
+                    <td>{{ appointment[3] }}</td>
+                    <td>{{ appointment[4] }}</td>
+                    <td>
+                        <select name="status" class="status-select">
+                            <option value="approved">موافق</option>
+                            <option value="rejected">مرفوض</option>
+                        </select>
+                        <input type="hidden" name="appointment_id" value="{{ appointment[0] }}">
+                        <button type="button" class="submit-button">تحديث</button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </form>
+
+    <script>
+        document.querySelectorAll('.submit-button').forEach(button => {
+            button.addEventListener('click', function() {
+                const row = this.closest('tr');
+                const appointment_id = row.querySelector('input[name="appointment_id"]').value;
+                const status = row.querySelector('.status-select').value;
+
+                fetch('/admin', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        appointment_id: appointment_id,
+                        status: status
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('تم تحديث الحالة بنجاح');
+                        row.querySelector('td:nth-child(4)').textContent = status === 'approved' ? 'موافق' : 'مرفوض';
+                    } else {
+                        alert('فشل في التحديث');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('حدث خطأ أثناء التحديث');
+                });
+            });
+        });
+    </script>
+</body>
+</html>
