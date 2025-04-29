@@ -2,15 +2,10 @@
 <html lang="ar">
 <head>
     <meta charset="UTF-8">
-    <title>تطبيق الدردشة</title>
+    <title>الدردشة مع {{ username }}</title>
     <style>
         * {
-
             font-family: sans-serif;
-        }
-
-        html {
-            direction: rtl;
         }
         body {
             background: #f9f9f9;
@@ -21,96 +16,91 @@
             display: flex;
             justify-content: center;
         }
-        .messages { 
-            height: 300px; 
-            overflow-y: scroll; 
-            border: 1px solid #ffedde; 
-            justify-content: flex-start;
-        }
         .messages {
-            margin-bottom: 10px; 
+            height: 300px;
+            overflow-y: scroll;
+            border: 1px solid #ffedde;
+            padding: 10px;
+            margin-bottom: 10px;
+        }
+        .message {
+            margin-bottom: 10px;
             color: #f9f9f9;
-            background-color: #1e1e1e57;
+            background-color: #1e1e1e;
             border-radius: 10px;
-            padding: 25px 15px ;
+            padding: 25px 15px;
         }
-        .message strong { 
+        .message strong {
             color: #007bff;
-         }
-
-        #chat-form{
-        position: fixed;
-        bottom: 30px;
         }
 
-        input[type="text"],::placeholder{
+        #chat-form {
+            position: fixed;
+            bottom: 30px;
+        }
+
+        input[type="text"],::placeholder {
             word-wrap: break-word;
             color: #f9f9f9;
         }
 
-        input[type="text"], button[type="submit"]  {
-        padding: 15px;
-        background: #007bff;
-        backdrop-filter: blur(10px);
-        outline: none;
-        border: #1e1e1e solid 1px;
-        border-radius: 400px;
-        cursor: auto;
-        margin-left: 5px;
+        input[type="text"], button[type="submit"] {
+            padding: 15px;
+            background: #007bff;
+            backdrop-filter: blur(10px);
+            outline: none;
+            border: #1e1e1e solid 1px;
+            border-radius: 400px;
+            cursor: auto;
+            margin-left: 5px;
         }
 
-        button[type="submit"]{
+        button[type="submit"] {
             background-color: #007bff;
             color: #f9f9f9;
         }
     </style>
 </head>
 <body>
+    <h2>مرحبًا يا {{ username }}!</h2>
     <div id="messages"></div>
     <form id="chat-form">
         <input type="text" id="message" placeholder="أدخل رسالتك هنا..." required>
         <button type="submit">إرسال</button>
     </form>
-</body>
-<script>
-    // استخراج رقم الحجز من رابط الصفحة
-    const appointmentId = window.location.pathname.split('/').pop();
 
-    // تحميل الرسائل
-    function loadMessages() {
-        fetch(`/get_messages/${appointmentId}`)
-            .then(response => response.json())
-            .then(data => {
-                const messagesDiv = document.getElementById('messages');
-                messagesDiv.innerHTML = '';
-                data.messages.forEach(msg => {
-                    messagesDiv.innerHTML += `<p><strong>${msg.sender}</strong>: ${msg.message}</p>`;
+    <script>
+        // تحميل الرسائل
+        function loadMessages() {
+            fetch('/get_messages')
+                .then(response => response.json())
+                .then(data => {
+                    const messagesDiv = document.getElementById('messages');
+                    messagesDiv.innerHTML = '';
+                    data.messages.forEach(msg => {
+                        messagesDiv.innerHTML += `<p><strong>${msg.username}</strong>: ${msg.message}</p>`;
+                    });
                 });
+        }
+
+        // إرسال رسالة
+        document.getElementById('chat-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const message = document.getElementById('message').value;
+            fetch('/send_message', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ message: message })
+            }).then(() => {
+                loadMessages();  // إعادة تحميل الرسائل بعد إرسالها
+                document.getElementById('message').value = '';  // مسح الحقل
             });
-    }
-
-    // إرسال رسالة
-    document.getElementById('chat-form').addEventListener('submit', function(e) {
-        e.preventDefault();
-        const message = document.getElementById('message').value;
-
-        fetch(`/send_message/${appointmentId}`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ message: message })
-        }).then(() => {
-            loadMessages();  // إعادة تحميل الرسائل بعد إرسالها
-            document.getElementById('message').value = '';  // مسح الحقل
         });
-    });
 
-    // تحميل الرسائل عند تحميل الصفحة
-    loadMessages();
-
-    // تحديث تلقائي كل 3 ثواني
-    setInterval(loadMessages, 3000);
-</script>
-
+        // تحميل الرسائل عند تحميل الصفحة
+        loadMessages();
+    </script>
+</body>
 </html>

@@ -224,5 +224,34 @@ def my_appointments():
     conn.close()
     return render_template('my_appointments.html', appointments=appointments)
 
+@app.route('/set_username', methods=['POST'])
+def set_username():
+    username = request.form['username']
+    session['username'] = username
+    return redirect('/chat_global')
+
+@app.route('/chat_global')
+def chat_global():
+    if 'username' not in session:
+        return redirect('/enter_name')
+    return render_template('chat_global.html')  # صفحة الدردشة
+
+@app.route('/enter_name')
+def enter_name():
+    return render_template('enter_name.html')
+
+@app.route('/send_message', methods=['POST'])
+def send_message():
+    sender = session.get('username', 'مستخدم مجهول')
+    message = request.json.get('message')
+
+    conn = sqlite3.connect('appointments.db')
+    c = conn.cursor()
+    c.execute('INSERT INTO chat (appointment_id, sender, message) VALUES (?, ?, ?)', (1, sender, message))
+    conn.commit()
+    conn.close()
+
+    return jsonify({'success': True})
+
 if __name__ == '__main__':
     app.run(debug=True)
