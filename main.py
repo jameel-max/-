@@ -154,5 +154,10 @@ def delete_appointment():
 
     return jsonify({'success': True})
 
+@app.route('/check_status')
+def check_status():
+    return render_template('check_status.html')
+
+
 if __name__ == '__main__':
     app.run(debug=True)
