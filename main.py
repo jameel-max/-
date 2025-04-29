@@ -21,12 +21,14 @@ def init_db():
     conn = sqlite3.connect('appointments.db')
     c = conn.cursor()
 
+    # جدول المستخدمين
     c.execute('''CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             username TEXT UNIQUE,
             password TEXT
         )''')
 
+    # جدول المواعيد
     c.execute('''CREATE TABLE IF NOT EXISTS appointments (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT,
@@ -35,6 +37,7 @@ def init_db():
             status TEXT
         )''')
 
+    # جدول التنبيهات
     c.execute('''CREATE TABLE IF NOT EXISTS notifications (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             user_name TEXT,
@@ -42,11 +45,17 @@ def init_db():
             is_read INTEGER DEFAULT 0
         )''')
 
-    c.execute('''CREATE TABLE IF NOT EXISTS chat (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            username TEXT,
-            message TEXT
-        )''')
+    # جدول الدردشة
+    c.execute('''
+    CREATE TABLE IF NOT EXISTS chat (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        appointment_id INTEGER,
+        sender TEXT,
+        message TEXT,
+        timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY(appointment_id) REFERENCES appointments(id)
+    )
+    ''')
 
     conn.commit()
     conn.close()
@@ -129,7 +138,6 @@ def admin_login():
             return redirect(url_for('admin'))
         else:
             return 'كلمة المرور خاطئة!'
-
     return render_template('admin_login.html')
 
 # تسجيل خروج الإدمن
@@ -169,6 +177,26 @@ def admin():
     conn.close()
     return render_template('admin.html', appointments=appointments)
 
+# حذف جميع البيانات
+@app.route('/delete_all_data', methods=['POST'])
+def delete_all_data():
+    if not session.get('is_admin'):
+        return redirect(url_for('admin_login'))
+
+    conn = sqlite3.connect('appointments.db')
+    c = conn.cursor()
+
+    # مسح جميع البيانات من الجداول
+    c.execute('DELETE FROM appointments')
+    c.execute('DELETE FROM users')
+    c.execute('DELETE FROM notifications')
+    c.execute('DELETE FROM chat')
+
+    conn.commit()
+    conn.close()
+
+    return redirect(url_for('admin'))
+
 # صفحة الحالة (للمستخدم المسجل فقط)
 @app.route('/status')
 @login_required
@@ -186,92 +214,51 @@ def status():
 
     return render_template('status.html', messages=messages, name=name)
 
-# حذف رسالة
-@app.route('/delete_message', methods=['POST'])
+# صفحة الدردشة مع صاحب الكراج
+@app.route('/chat/<int:appointment_id>', methods=['GET', 'POST'])
 @login_required
-def delete_message():
-    message = request.json.get('message')
-    name = session['username']
-
+def chat(appointment_id):
     conn = sqlite3.connect('appointments.db')
     c = conn.cursor()
-    c.execute('DELETE FROM notifications WHERE user_name = ? AND message = ?', (name, message))
-    conn.commit()
+    
+    # جلب رسائل الدردشة الخاصة بالحجز
+    c.execute('SELECT sender, message, timestamp FROM chat WHERE appointment_id = ? ORDER BY timestamp ASC', (appointment_id,))
+    messages = c.fetchall()
+    
+    # جلب تفاصيل الحجز
+    c.execute('SELECT * FROM appointments WHERE id = ?', (appointment_id,))
+    appointment = c.fetchone()
+    
     conn.close()
+    
+    return render_template('chat.html', messages=messages, appointment=appointment)
 
-    return jsonify({'success': True})
-
-# حذف موعد
-@app.route('/delete_appointment', methods=['POST'])
+# إرسال الرسالة في الدردشة
+@app.route('/send_message/<int:appointment_id>', methods=['POST'])
 @login_required
-def delete_appointment():
-    data = request.get_json()
-    appointment_id = data['appointment_id']
-
-    conn = sqlite3.connect('appointments.db')
-    c = conn.cursor()
-    c.execute('DELETE FROM appointments WHERE id = ?', (appointment_id,))
-    conn.commit()
-    conn.close()
-
-    return jsonify({'success': True})
-
-# حذف جميع البيانات
-@app.route('/delete_all_data', methods=['POST'])
-def delete_all_data():
-    if not session.get('is_admin'):
-        return redirect(url_for('admin_login'))
-
-    conn = sqlite3.connect('appointments.db')
-    c = conn.cursor()
-
-    # مسح جميع البيانات من الجداول
-    c.execute('DELETE FROM appointments')
-    c.execute('DELETE FROM users')
-    c.execute('DELETE FROM notifications')
-
-    conn.commit()
-    conn.close()
-
-    return redirect(url_for('admin'))
-
-# صفحة التحقق من الحالة
-@app.route('/check_status')
-@login_required
-def check_status():
-    return render_template('check_status.html')
-
-# صفحة الدردشة
-@app.route('/chat')
-@login_required
-def chat():
-    return render_template('chat.html')
-
-# إرسال رسالة
-@app.route('/send_message', methods=['POST'])
-@login_required
-def send_message():
+def send_message(appointment_id):
     sender = session['username']
     message = request.json.get('message')
 
     conn = sqlite3.connect('appointments.db')
     c = conn.cursor()
-    c.execute('INSERT INTO chat (username, message) VALUES (?, ?)', (sender, message))
+    c.execute('INSERT INTO chat (appointment_id, sender, message) VALUES (?, ?, ?)', (appointment_id, sender, message))
     conn.commit()
     conn.close()
 
     return jsonify({'success': True})
 
-# جلب الرسائل
-@app.route('/get_messages')
+# الحصول على الرسائل
+@app.route('/get_messages/<int:appointment_id>', methods=['GET'])
 @login_required
-def get_messages():
+def get_messages(appointment_id):
     conn = sqlite3.connect('appointments.db')
     c = conn.cursor()
-    c.execute('SELECT username, message FROM chat ORDER BY id DESC LIMIT 50')
-    messages = [{'username': row[0], 'message': row[1]} for row in c.fetchall()]
+    c.execute('SELECT sender, message FROM chat WHERE appointment_id = ? ORDER BY timestamp ASC', (appointment_id,))
+    messages = [{'sender': row[0], 'message': row[1]} for row in c.fetchall()]
     conn.close()
-    return jsonify({'messages': messages[::-1]})
+
+    return jsonify({'messages': messages})
 
 if __name__ == '__main__':
     app.run(debug=True)
