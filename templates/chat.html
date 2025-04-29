@@ -12,44 +12,44 @@
     </style>
 </head>
 <body>
-    <div class="chat-box">
-        <h2>الدردشة الجماعية</h2>
-        <div class="messages" id="messages"></div>
-        <form id="chat-form">
-            <input type="text" id="message" placeholder="اكتب رسالتك..." required style="width: 80%;">
-            <button type="submit">إرسال</button>
-        </form>
-    </div>
-
-    <script>
-        function loadMessages() {
-            fetch('/get_messages')
-                .then(res => res.json())
-                .then(data => {
-                    const box = document.getElementById('messages');
-                    box.innerHTML = '';
-                    data.forEach(msg => {
-                        box.innerHTML += `<div class="message"><strong>${msg.sender}:</strong> ${msg.message}</div>`;
-                    });
-                    box.scrollTop = box.scrollHeight;
-                });
-        }
-
-        document.getElementById('chat-form').addEventListener('submit', function(e) {
-            e.preventDefault();
-            const message = document.getElementById('message').value;
-            fetch('/send_message', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ message })
-            }).then(() => {
-                document.getElementById('message').value = '';
-                loadMessages();
-            });
-        });
-
-        setInterval(loadMessages, 3000);
-        loadMessages();
-    </script>
+    <h2>الدردشة</h2>
+    <div id="messages"></div>
+    <form id="chat-form">
+        <input type="text" id="message" placeholder="أدخل رسالتك هنا..." required>
+        <button type="submit">إرسال</button>
+    </form>
 </body>
+<script>
+    // تحميل الرسائل
+    function loadMessages() {
+        fetch('/get_messages')
+            .then(response => response.json())
+            .then(data => {
+                const messagesDiv = document.getElementById('messages');
+                messagesDiv.innerHTML = '';
+                data.messages.forEach(msg => {
+                    messagesDiv.innerHTML += `<p><strong>${msg.username}</strong>: ${msg.message}</p>`;
+                });
+            });
+    }
+
+    // إرسال رسالة
+    document.getElementById('chat-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const message = document.getElementById('message').value;
+        fetch('/send_message', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ message: message })
+        }).then(() => {
+            loadMessages();  // إعادة تحميل الرسائل بعد إرسالها
+            document.getElementById('message').value = '';  // مسح الحقل
+        });
+    });
+
+    // تحميل الرسائل عند تحميل الصفحة
+    loadMessages();
+</script>
 </html>
