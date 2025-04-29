@@ -4,70 +4,62 @@ import sqlite3
 from functools import wraps
 
 app = Flask(__name__)
-app.secret_key = 'secret-key'  # مفتاح سري لتشفير الجلسات
-ADMIN_PASSWORD = 'admin123'  # كلمة مرور المدير
+app.secret_key = 'secret-key'
+ADMIN_PASSWORD = 'admin123'
 
-# ديكور: حماية تسجيل دخول المستخدم
+# حماية الصفحات التي تتطلب تسجيل دخول
 def login_required(f):
     @wraps(f)
-    def decorated_function(*args, **kwargs):
+    def decorated(*args, **kwargs):
         if 'username' not in session:
             return redirect(url_for('login'))
         return f(*args, **kwargs)
-    return decorated_function
+    return decorated
 
 # إعداد قاعدة البيانات
 def init_db():
     conn = sqlite3.connect('appointments.db')
     c = conn.cursor()
 
-    # جدول المستخدمين
     c.execute('''CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            username TEXT UNIQUE,
-            password TEXT
-        )''')
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        username TEXT UNIQUE,
+        password TEXT
+    )''')
 
-    # جدول المواعيد
     c.execute('''CREATE TABLE IF NOT EXISTS appointments (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT,
-            car_type TEXT,
-            appointment_time TEXT,
-            status TEXT
-        )''')
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT,
+        car_type TEXT,
+        appointment_time TEXT,
+        status TEXT
+    )''')
 
-    # جدول التنبيهات
     c.execute('''CREATE TABLE IF NOT EXISTS notifications (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_name TEXT,
-            message TEXT,
-            is_read INTEGER DEFAULT 0
-        )''')
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_name TEXT,
+        message TEXT,
+        is_read INTEGER DEFAULT 0
+    )''')
 
-    # جدول الدردشة
-    c.execute('''
-    CREATE TABLE IF NOT EXISTS chat (
+    c.execute('''CREATE TABLE IF NOT EXISTS chat (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         appointment_id INTEGER,
         sender TEXT,
         message TEXT,
         timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY(appointment_id) REFERENCES appointments(id)
-    )
-    ''')
+    )''')
 
     conn.commit()
     conn.close()
 
 init_db()
 
-# الصفحة الرئيسية
 @app.route('/')
 def home():
     return render_template('index.html')
 
-# تسجيل دخول المستخدم
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
@@ -83,18 +75,10 @@ def login():
         if user and check_password_hash(user[2], password):
             session['username'] = username
             return redirect(url_for('home'))
-        else:
-            return 'فشل في تسجيل الدخول'
+        return 'فشل في تسجيل الدخول'
 
     return render_template('login.html')
 
-# تسجيل الخروج للمستخدم
-@app.route('/logout')
-def logout():
-    session.pop('username', None)
-    return redirect(url_for('login'))
-
-# صفحة تسجيل مستخدم جديد
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
@@ -111,7 +95,11 @@ def register():
 
     return render_template('register.html')
 
-# حجز موعد (يتطلب تسجيل دخول)
+@app.route('/logout')
+def logout():
+    session.pop('username', None)
+    return redirect(url_for('login'))
+
 @app.route('/book_appointment', methods=['POST'])
 @login_required
 def book_appointment():
@@ -126,9 +114,8 @@ def book_appointment():
     conn.commit()
     conn.close()
 
-    return jsonify({'message': 'تم تقديم الحجز بنجاح. في انتظار موافقة صاحب الكراج.'})
+    return jsonify({'message': 'تم تقديم الحجز بنجاح'})
 
-# تسجيل دخول الإدمن
 @app.route('/admin_login', methods=['GET', 'POST'])
 def admin_login():
     if request.method == 'POST':
@@ -136,17 +123,14 @@ def admin_login():
         if password == ADMIN_PASSWORD:
             session['is_admin'] = True
             return redirect(url_for('admin'))
-        else:
-            return 'كلمة المرور خاطئة!'
+        return 'كلمة المرور خاطئة'
     return render_template('admin_login.html')
 
-# تسجيل خروج الإدمن
 @app.route('/admin_logout')
 def admin_logout():
     session.pop('is_admin', None)
     return redirect(url_for('admin_login'))
 
-# لوحة تحكم الإدمن (يتطلب كلمة مرور الإدمن)
 @app.route('/admin', methods=['GET', 'POST'])
 def admin():
     if not session.get('is_admin'):
@@ -164,9 +148,8 @@ def admin():
 
         c.execute('SELECT name FROM appointments WHERE id = ?', (appointment_id,))
         user_name = c.fetchone()[0]
-
-        message_text = 'تم قبول حجزك ✅' if status == 'approved' else 'تم رفض حجزك ❌'
-        c.execute('INSERT INTO notifications (user_name, message) VALUES (?, ?)', (user_name, message_text))
+        message = 'تم قبول حجزك ✅' if status == 'approved' else 'تم رفض حجزك ❌'
+        c.execute('INSERT INTO notifications (user_name, message) VALUES (?, ?)', (user_name, message))
 
         conn.commit()
         conn.close()
@@ -177,27 +160,6 @@ def admin():
     conn.close()
     return render_template('admin.html', appointments=appointments)
 
-# حذف جميع البيانات
-@app.route('/delete_all_data', methods=['POST'])
-def delete_all_data():
-    if not session.get('is_admin'):
-        return redirect(url_for('admin_login'))
-
-    conn = sqlite3.connect('appointments.db')
-    c = conn.cursor()
-
-    # مسح جميع البيانات من الجداول
-    c.execute('DELETE FROM appointments')
-    c.execute('DELETE FROM users')
-    c.execute('DELETE FROM notifications')
-    c.execute('DELETE FROM chat')
-
-    conn.commit()
-    conn.close()
-
-    return redirect(url_for('admin'))
-
-# صفحة الحالة (للمستخدم المسجل فقط)
 @app.route('/status')
 @login_required
 def status():
@@ -214,26 +176,20 @@ def status():
 
     return render_template('status.html', messages=messages, name=name)
 
-# صفحة الدردشة مع صاحب الكراج
-@app.route('/chat/<int:appointment_id>', methods=['GET', 'POST'])
+@app.route('/chat/<int:appointment_id>', methods=['GET'])
 @login_required
 def chat(appointment_id):
     conn = sqlite3.connect('appointments.db')
     c = conn.cursor()
-    
-    # جلب رسائل الدردشة الخاصة بالحجز
     c.execute('SELECT sender, message, timestamp FROM chat WHERE appointment_id = ? ORDER BY timestamp ASC', (appointment_id,))
     messages = c.fetchall()
-    
-    # جلب تفاصيل الحجز
+
     c.execute('SELECT * FROM appointments WHERE id = ?', (appointment_id,))
     appointment = c.fetchone()
-    
+
     conn.close()
-    
     return render_template('chat.html', messages=messages, appointment=appointment)
 
-# إرسال الرسالة في الدردشة
 @app.route('/send_message/<int:appointment_id>', methods=['POST'])
 @login_required
 def send_message(appointment_id):
@@ -248,7 +204,6 @@ def send_message(appointment_id):
 
     return jsonify({'success': True})
 
-# الحصول على الرسائل
 @app.route('/get_messages/<int:appointment_id>', methods=['GET'])
 @login_required
 def get_messages(appointment_id):
@@ -257,8 +212,17 @@ def get_messages(appointment_id):
     c.execute('SELECT sender, message FROM chat WHERE appointment_id = ? ORDER BY timestamp ASC', (appointment_id,))
     messages = [{'sender': row[0], 'message': row[1]} for row in c.fetchall()]
     conn.close()
-
     return jsonify({'messages': messages})
+
+@app.route('/my_appointments')
+@login_required
+def my_appointments():
+    conn = sqlite3.connect('appointments.db')
+    c = conn.cursor()
+    c.execute('SELECT id, car_type, appointment_time, status FROM appointments WHERE name = ?', (session['username'],))
+    appointments = c.fetchall()
+    conn.close()
+    return render_template('my_appointments.html', appointments=appointments)
 
 if __name__ == '__main__':
     app.run(debug=True)
