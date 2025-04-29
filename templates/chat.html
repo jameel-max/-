@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <title>تطبيق الدردشة</title>
+    <style>
+        body { font-family: 'Tahoma'; background: #f9f9f9; padding: 20px; direction: rtl; }
+        .chat-box { max-width: 600px; margin: auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 0 10px #ccc; }
+        .messages { height: 300px; overflow-y: scroll; border: 1px solid #ccc; padding: 10px; margin-bottom: 10px; }
+        .message { margin-bottom: 10px; }
+        .message strong { color: #007bff; }
+    </style>
+</head>
+<body>
+    <div class="chat-box">
+        <h2>الدردشة الجماعية</h2>
+        <div class="messages" id="messages"></div>
+        <form id="chat-form">
+            <input type="text" id="message" placeholder="اكتب رسالتك..." required style="width: 80%;">
+            <button type="submit">إرسال</button>
+        </form>
+    </div>
+
+    <script>
+        function loadMessages() {
+            fetch('/get_messages')
+                .then(res => res.json())
+                .then(data => {
+                    const box = document.getElementById('messages');
+                    box.innerHTML = '';
+                    data.forEach(msg => {
+                        box.innerHTML += `<div class="message"><strong>${msg.sender}:</strong> ${msg.message}</div>`;
+                    });
+                    box.scrollTop = box.scrollHeight;
+                });
+        }
+
+        document.getElementById('chat-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const message = document.getElementById('message').value;
+            fetch('/send_message', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message })
+            }).then(() => {
+                document.getElementById('message').value = '';
+                loadMessages();
+            });
+        });
+
+        setInterval(loadMessages, 3000);
+        loadMessages();
+    </script>
+</body>
+</html>

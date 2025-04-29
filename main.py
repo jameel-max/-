@@ -42,6 +42,12 @@ def init_db():
             is_read INTEGER DEFAULT 0
         )''')
 
+    c.execute('''CREATE TABLE IF NOT EXISTS chat (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT,
+            message TEXT
+        )''')
+
     conn.commit()
     conn.close()
 
@@ -123,6 +129,7 @@ def admin_login():
             return redirect(url_for('admin'))
         else:
             return 'كلمة المرور خاطئة!'
+
     return render_template('admin_login.html')
 
 # تسجيل خروج الإدمن
@@ -233,6 +240,38 @@ def delete_all_data():
 @login_required
 def check_status():
     return render_template('check_status.html')
+
+# صفحة الدردشة
+@app.route('/chat')
+@login_required
+def chat():
+    return render_template('chat.html')
+
+# إرسال رسالة
+@app.route('/send_message', methods=['POST'])
+@login_required
+def send_message():
+    sender = session['username']
+    message = request.json.get('message')
+
+    conn = sqlite3.connect('appointments.db')
+    c = conn.cursor()
+    c.execute('INSERT INTO chat (username, message) VALUES (?, ?)', (sender, message))
+    conn.commit()
+    conn.close()
+
+    return jsonify({'success': True})
+
+# جلب الرسائل
+@app.route('/get_messages')
+@login_required
+def get_messages():
+    conn = sqlite3.connect('appointments.db')
+    c = conn.cursor()
+    c.execute('SELECT username, message FROM chat ORDER BY id DESC LIMIT 50')
+    messages = [{'username': row[0], 'message': row[1]} for row in c.fetchall()]
+    conn.close()
+    return jsonify({'messages': messages[::-1]})
 
 if __name__ == '__main__':
     app.run(debug=True)
