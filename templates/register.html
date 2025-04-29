@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <title>تسجيل حساب جديد</title>
+    <style>
+        body {
+            background-color: #181A1E;
+            color: #e0f0ff;
+            font-family: Arial, sans-serif;
+            direction: rtl;
+            text-align: center;
+            padding-top: 50px;
+        }
+
+        form {
+            display: inline-block;
+            background-color: #1F2626;
+            padding: 20px;
+            border-radius: 10px;
+        }
+
+        input {
+            margin: 10px;
+            padding: 10px;
+            width: 200px;
+        }
+
+        button {
+            background-color: #2196F3;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #0b7dda;
+        }
+
+        .error {
+            color: red;
+        }
+    </style>
+</head>
+<body>
+
+    <h2>تسجيل حساب جديد</h2>
+
+    <form method="POST">
+        <input type="text" name="username" placeholder="اسم المستخدم" required><br>
+        <input type="password" name="password" placeholder="كلمة المرور" required><br>
+        <button type="submit">تسجيل</button>
+    </form>
+
+    {% if error %}
+        <p class="error">{{ error }}</p>
+    {% endif %}
+
+    <p>عندك حساب؟ <a href="{{ url_for('login') }}">سجّل دخول</a></p>
+
+</body>
+</html>

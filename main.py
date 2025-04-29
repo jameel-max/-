@@ -1,14 +1,35 @@
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, session, redirect, url_for
+from werkzeug.security import generate_password_hash, check_password_hash
 import sqlite3
+from functools import wraps
 
 app = Flask(__name__)
+app.secret_key = 'secret-key'  # مفتاح سري لتشفير الجلسات
+
+# ديكور للحماية
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'username' not in session:
+            return redirect(url_for('login'))
+        return f(*args, **kwargs)
+    return decorated_function
 
 # إعداد قاعدة البيانات
 def init_db():
     conn = sqlite3.connect('appointments.db')
     c = conn.cursor()
 
-    # إنشاء جدول المواعيد
+    # جدول المستخدمين
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT UNIQUE,
+            password TEXT
+        )
+    ''')
+
+    # جدول المواعيد
     c.execute('''
         CREATE TABLE IF NOT EXISTS appointments (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -39,8 +60,53 @@ init_db()
 def home():
     return render_template('index.html')
 
+# تسجيل الدخول
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+
+        conn = sqlite3.connect('appointments.db')
+        c = conn.cursor()
+        c.execute('SELECT * FROM users WHERE username = ?', (username,))
+        user = c.fetchone()
+        conn.close()
+
+        if user and check_password_hash(user[2], password):  # check_password_hash لتأكيد كلمة المرور
+            session['username'] = username
+            return redirect(url_for('home'))
+        else:
+            return 'فشل في تسجيل الدخول'
+
+    return render_template('login.html')
+
+# تسجيل الخروج
+@app.route('/logout')
+def logout():
+    session.pop('username', None)
+    return redirect(url_for('login'))
+
+# صفحة التسجيل
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = generate_password_hash(request.form['password'])  # تشفير كلمة المرور
+
+        conn = sqlite3.connect('appointments.db')
+        c = conn.cursor()
+        c.execute('INSERT INTO users (username, password) VALUES (?, ?)', (username, password))
+        conn.commit()
+        conn.close()
+
+        return redirect(url_for('login'))
+
+    return render_template('register.html')
+
 # حجز موعد
 @app.route('/book_appointment', methods=['POST'])
+@login_required  # حماية الصفحة
 def book_appointment():
     name = request.json.get('name')
     car_type = request.json.get('car_type')
@@ -59,6 +125,7 @@ def book_appointment():
 
 # لوحة تحكم الادمين
 @app.route('/admin', methods=['GET', 'POST'])
+@login_required  # حماية الصفحة
 def admin():
     conn = sqlite3.connect('appointments.db')
     c = conn.cursor()
@@ -69,11 +136,7 @@ def admin():
         status = data['status']
 
         # تحديث حالة الموعد
-        c.execute('''
-            UPDATE appointments
-            SET status = ?
-            WHERE id = ?
-        ''', (status, appointment_id))
+        c.execute('''UPDATE appointments SET status = ? WHERE id = ?''', (status, appointment_id))
 
         # جلب اسم المستخدم من الموعد
         c.execute('SELECT name FROM appointments WHERE id = ?', (appointment_id,))
@@ -81,10 +144,7 @@ def admin():
 
         # إرسال إشعار للمستخدم
         message_text = 'تم قبول حجزك ✅' if status == 'approved' else 'تم رفض حجزك ❌'
-        c.execute('''
-            INSERT INTO notifications (user_name, message)
-            VALUES (?, ?)
-        ''', (user_name, message_text))
+        c.execute('''INSERT INTO notifications (user_name, message) VALUES (?, ?)''', (user_name, message_text))
 
         conn.commit()
         conn.close()
@@ -100,48 +160,40 @@ def admin():
 
 # عرض حالة الحجز والرسائل
 @app.route('/status')
+@login_required  # حماية الصفحة
 def status():
     name = request.args.get('name')
     conn = sqlite3.connect('appointments.db')
     c = conn.cursor()
 
     # جلب الرسائل للمستخدم
-    c.execute('''
-        SELECT message FROM notifications
-        WHERE user_name = ? AND is_read = 0
-    ''', (name,))
+    c.execute('''SELECT message FROM notifications WHERE user_name = ? AND is_read = 0''', (name,))
     messages = c.fetchall()
 
     # تعيين الرسائل كمقروءة
-    c.execute('''
-        UPDATE notifications
-        SET is_read = 1
-        WHERE user_name = ?
-    ''', (name,))
-
+    c.execute('''UPDATE notifications SET is_read = 1 WHERE user_name = ?''', (name,))
     conn.commit()
     conn.close()
 
     return render_template('status.html', messages=messages, name=name)
 
-# 🔽 هون بتحط الكود تبع حذف الرسالة
+# حذف رسالة
 @app.route('/delete_message', methods=['POST'])
+@login_required  # حماية الصفحة
 def delete_message():
     message = request.json.get('message')
     name = request.json.get('name')
 
     conn = sqlite3.connect('appointments.db')
     c = conn.cursor()
-    c.execute('''
-        DELETE FROM notifications
-        WHERE user_name = ? AND message = ?
-    ''', (name, message))
+    c.execute('''DELETE FROM notifications WHERE user_name = ? AND message = ?''', (name, message))
     conn.commit()
     conn.close()
 
     return jsonify({'success': True})
 
 @app.route('/delete_appointment', methods=['POST'])
+@login_required  # حماية الصفحة
 def delete_appointment():
     data = request.get_json()
     appointment_id = data['appointment_id']
@@ -154,10 +206,10 @@ def delete_appointment():
 
     return jsonify({'success': True})
 
+# التحقق من حالة الحجز
 @app.route('/check_status')
 def check_status():
     return render_template('check_status.html')
-
 
 if __name__ == '__main__':
     app.run(debug=True)
