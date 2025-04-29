@@ -124,5 +124,21 @@ def status():
 
     return render_template('status.html', messages=messages, name=name)
 
+# 🔽 هون بتحط الكود تبع حذف الرسالة
+@app.route('/delete_message', methods=['POST'])
+def delete_message():
+    message = request.json.get('message')
+    name = request.json.get('name')
+
+    conn = sqlite3.connect('appointments.db')
+    c = conn.cursor()
+    c.execute('''
+        DELETE FROM notifications
+        WHERE user_name = ? AND message = ?
+    ''', (name, message))
+    conn.commit()
+    conn.close()
+
+    return jsonify({'success': True})
 if __name__ == '__main__':
     app.run(debug=True)

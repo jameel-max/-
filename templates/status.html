@@ -1,0 +1,75 @@
+<!-- status.html -->
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <title>حالة الحجز</title>
+    <style>
+        body {
+            background-color: #181A1E;
+            color: white;
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .message {
+            background-color: #1f2626;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 10px auto;
+            max-width: 400px;
+            position: relative;
+        }
+
+        button.delete-btn {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background-color: #e74c3c;
+            border: none;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        h2 {
+            color: #00c3ff;
+        }
+    </style>
+</head>
+<body>
+    <h2>مرحبًا {{ name }}، هذه رسائلك:</h2>
+
+    {% for message in messages %}
+    <div class="message">
+        <button class="delete-btn" onclick="deleteMessage('{{ message[0] }}')">حذف</button>
+        {{ message[0] }}
+    </div>
+    {% else %}
+    <p>لا توجد رسائل جديدة.</p>
+    {% endfor %}
+
+    <script>
+        function deleteMessage(messageText) {
+            fetch('/delete_message', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    message: messageText,
+                    name: "{{ name }}"
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                }
+            });
+        }
+    </script>
+</body>
+</html>
