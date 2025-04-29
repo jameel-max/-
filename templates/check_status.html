@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title>تتبع حالة الحجز</title>
+  <style>
+    body {
+      background-color: #181A1E;
+      color: #fff;
+      font-family: Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+    }
+    input {
+      padding: 10px;
+      margin: 10px;
+      width: 250px;
+      border: none;
+      border-radius: 5px;
+      background-color: #2c2f33;
+      color: white;
+    }
+    button {
+      padding: 10px 20px;
+      background-color: #3a7bd5;
+      border: none;
+      border-radius: 5px;
+      color: white;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #2a5cab;
+    }
+  </style>
+</head>
+<body>
+  <h2>أدخل اسمك لتتبع حالة الحجز</h2>
+  <input type="text" id="userName" placeholder="اكتب اسمك">
+  <button onclick="goToStatus()">عرض الحالة</button>
+
+  <script>
+    function goToStatus() {
+      const name = document.getElementById('userName').value.trim();
+      if (name) {
+        window.location.href = `/status?name=${encodeURIComponent(name)}`;
+      } else {
+        alert("الرجاء إدخال الاسم");
+      }
+    }
+  </script>
+</body>
+</html>

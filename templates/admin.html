@@ -48,6 +48,14 @@
         button:hover {
             background-color: #0b7dda;
         }
+
+        .delete-button {
+            background-color: #f44336;
+        }
+
+        .delete-button:hover {
+            background-color: #d32f2f;
+        }
     </style>
 </head>
 <body>
@@ -62,6 +70,7 @@
                     <th>الوقت المطلوب</th>
                     <th>حالة الحجز</th>
                     <th>التصديق</th>
+                    <th>حذف</th>
                 </tr>
             </thead>
             <tbody>
@@ -78,6 +87,9 @@
                         </select>
                         <input type="hidden" name="appointment_id" value="{{ appointment[0] }}">
                         <button type="button" class="submit-button">تحديث</button>
+                    </td>
+                    <td>
+                        <button type="button" class="delete-button" onclick="deleteAppointment({{ appointment[0] }})">حذف</button>
                     </td>
                 </tr>
                 {% endfor %}
@@ -117,6 +129,32 @@
                 });
             });
         });
+
+        // حذف الموعد
+        function deleteAppointment(appointmentId) {
+            if (confirm("هل أنت متأكد من أنك تريد حذف هذا الحجز؟")) {
+                fetch('/delete_appointment', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ appointment_id: appointmentId })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('تم حذف الحجز بنجاح');
+                        location.reload();  // تحديث الصفحة بعد الحذف
+                    } else {
+                        alert('فشل في الحذف');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('حدث خطأ أثناء الحذف');
+                });
+            }
+        }
     </script>
 </body>
 </html>

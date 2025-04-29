@@ -140,5 +140,19 @@ def delete_message():
     conn.close()
 
     return jsonify({'success': True})
+
+@app.route('/delete_appointment', methods=['POST'])
+def delete_appointment():
+    data = request.get_json()
+    appointment_id = data['appointment_id']
+
+    conn = sqlite3.connect('appointments.db')
+    c = conn.cursor()
+    c.execute('''DELETE FROM appointments WHERE id = ?''', (appointment_id,))
+    conn.commit()
+    conn.close()
+
+    return jsonify({'success': True})
+
 if __name__ == '__main__':
     app.run(debug=True)
