@@ -126,34 +126,40 @@
     </div>
 
     <script>
-        document.getElementById('booking-form').addEventListener('submit', function (e) {
+        document.addEventListener('DOMContentLoaded', function () {
+          const form = document.getElementById('appointment-form');
+          const messageDiv = document.getElementById('message');
+        
+          form.addEventListener('submit', async function (e) {
             e.preventDefault();
-
-            const formData = {
-                name: document.getElementById('name').value,
-                car_type: document.getElementById('car_type').value,
-                appointment_time: document.getElementById('appointment_time').value
-            };
-
-            fetch('/book_appointment', {
+        
+            const name = document.getElementById('name').value;
+            const carType = document.getElementById('car_type').value;
+            const appointmentTime = document.getElementById('appointment_time').value;
+        
+            try {
+              const response = await fetch('/book_appointment', {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json'
+                  'Content-Type': 'application/json'
                 },
-                body: JSON.stringify(formData)
-            })
-            .then(response => response.json())
-            .then(data => {
-                const messageDiv = document.getElementById('response-message');
-                messageDiv.textContent = data.message;
-                messageDiv.classList.add('pending');
-            })
-            .catch(error => {
-                const messageDiv = document.getElementById('response-message');
-                messageDiv.textContent = 'حدث خطأ أثناء إرسال الطلب';
-                messageDiv.classList.add('rejected');
-            });
+                body: JSON.stringify({
+                  name: name,
+                  car_type: carType,
+                  appointment_time: appointmentTime
+                })
+              });
+        
+              const data = await response.json();
+              messageDiv.textContent = data.message;
+              messageDiv.style.color = 'green';
+              form.reset();
+            } catch (error) {
+              messageDiv.textContent = 'حدث خطأ أثناء الحجز. حاول مرة أخرى.';
+              messageDiv.style.color = 'red';
+            }
+          });
         });
-    </script>
+        </script>        
 </body>
 </html>
