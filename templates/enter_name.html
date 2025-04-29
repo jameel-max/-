@@ -3,12 +3,73 @@
 <head>
     <meta charset="UTF-8">
     <title>ادخل اسمك</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f4f4f9;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            direction: rtl;
+        }
+
+        .container {
+            background-color: #fff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+        }
+
+        h2 {
+            font-size: 24px;
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 20px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+
+        button {
+            width: 100%;
+            padding: 10px;
+            background-color: #007bff;
+            border: none;
+            border-radius: 4px;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+            box-sizing: border-box;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        input[type="text"]:focus, button:focus {
+            outline: none;
+            border-color: #007bff;
+        }
+    </style>
 </head>
-<body style="text-align:center; padding-top: 100px; font-family: sans-serif;">
-    <h2>أدخل اسمك للمتابعة</h2>
-    <form action="/set_username" method="POST">
-        <input type="text" name="username" placeholder="اسم المستخدم" required>
-        <button type="submit">دخول</button>
-    </form>
+<body>
+    <div class="container">
+        <h2>أدخل اسمك للمتابعة</h2>
+        <form action="/set_username" method="POST">
+            <input type="text" name="username" placeholder="اسم المستخدم" required>
+            <button type="submit">دخول</button>
+        </form>
+    </div>
 </body>
 </html>
