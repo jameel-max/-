@@ -37,24 +37,22 @@
   </style>
 </head>
 <body>
+
     <h1>حالة حجزك</h1>
-
-    <form action="{{ url_for('status') }}" method="get">
-        <label for="name">اسم المستخدم:</label>
-        <input type="text" name="name" required><br><br>
-        <button type="submit">تحقق من الحالة</button>
-    </form>
-
-    {% if messages %}
-        <h3>الرسائل:</h3>
-        <ul>
-            {% for message in messages %}
-                <li>{{ message[0] }}</li>
+    
+    <div class="container">
+        <h2>حالة حجزك يا {{ name }}</h2>
+      
+        {% if messages %}
+          <ul>
+            {% for msg in messages %}
+              <li>{{ msg[0] }}</li>
             {% endfor %}
-        </ul>
-    {% else %}
-        <p>لا توجد رسائل جديدة.</p>
-    {% endif %}
+          </ul>
+        {% else %}
+          <p>لا توجد رسائل حالياً.</p>
+        {% endif %}
+      </div>
 
 </body>
 </html>

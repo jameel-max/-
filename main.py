@@ -161,13 +161,13 @@ def admin():
 
 # عرض حالة الحجز والرسائل
 @app.route('/status')
-@login_required  # حماية الصفحة
+@login_required
 def status():
-    name = request.args.get('name')
+    name = session['username']  # خذ اسم المستخدم من الجلسة
     conn = sqlite3.connect('appointments.db')
     c = conn.cursor()
 
-    # جلب الرسائل للمستخدم
+    # جلب الرسائل الغير مقروءة للمستخدم
     c.execute('''SELECT message FROM notifications WHERE user_name = ? AND is_read = 0''', (name,))
     messages = c.fetchall()
 

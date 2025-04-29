@@ -125,7 +125,7 @@
         </form>
         
         <div id="message" style="margin-top: 10px;"></div>
-        <a href="/check_status">تاكد من حالة الحجز</a>
+        <a href="/status">تاكد من حالة الحجز</a>
         {% else %}
         <p>يرجى تسجيل الدخول أولاً لحجز الموعد.</p>
         <a href="{{ url_for('login') }}">تسجيل الدخول</a> | <a href="{{ url_for('register') }}">إنشاء حساب</a>
@@ -162,6 +162,6 @@
             });
         });
     </script>
-               
+
 </body>
 </html>
