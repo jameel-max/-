@@ -37,19 +37,24 @@
   </style>
 </head>
 <body>
-  <h2>أدخل اسمك لتتبع حالة الحجز</h2>
-  <input type="text" id="userName" placeholder="اكتب اسمك">
-  <button onclick="goToStatus()">عرض الحالة</button>
+    <h1>حالة حجزك</h1>
 
-  <script>
-    function goToStatus() {
-      const name = document.getElementById('userName').value.trim();
-      if (name) {
-        window.location.href = `/status?name=${encodeURIComponent(name)}`;
-      } else {
-        alert("الرجاء إدخال الاسم");
-      }
-    }
-  </script>
+    <form action="{{ url_for('status') }}" method="get">
+        <label for="name">اسم المستخدم:</label>
+        <input type="text" name="name" required><br><br>
+        <button type="submit">تحقق من الحالة</button>
+    </form>
+
+    {% if messages %}
+        <h3>الرسائل:</h3>
+        <ul>
+            {% for message in messages %}
+                <li>{{ message[0] }}</li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>لا توجد رسائل جديدة.</p>
+    {% endif %}
+
 </body>
 </html>

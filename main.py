@@ -106,18 +106,19 @@ def register():
 
 # حجز موعد
 @app.route('/book_appointment', methods=['POST'])
-@login_required  # حماية الصفحة
 def book_appointment():
-    name = request.json.get('name')
+    # التحقق من إذا كان المستخدم مسجل دخوله
+    if 'username' not in session:
+        return jsonify({'message': 'يرجى تسجيل الدخول أولاً لحجز الموعد.'})
+
+    name = session['username']  # اسم المستخدم الذي تم تسجيل دخوله
     car_type = request.json.get('car_type')
     appointment_time = request.json.get('appointment_time')
 
     conn = sqlite3.connect('appointments.db')
     c = conn.cursor()
-    c.execute('''
-        INSERT INTO appointments (name, car_type, appointment_time, status)
-        VALUES (?, ?, ?, ?)
-    ''', (name, car_type, appointment_time, 'pending'))
+    c.execute('''INSERT INTO appointments (name, car_type, appointment_time, status)
+                VALUES (?, ?, ?, ?)''', (name, car_type, appointment_time, 'pending'))
     conn.commit()
     conn.close()
 

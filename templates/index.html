@@ -109,58 +109,59 @@
     <div class="container">
         <h2>حجز موعد تصليح المركبة</h2>
 
+        <!-- تحقق من إذا كان المستخدم مسجل دخوله -->
+        {% if 'username' in session %}
         <form id="appointment-form">
-          <label for="name">اسمك:</label>
-          <input type="text" id="name" required>
+            <label for="name">اسمك:</label>
+            <input type="text" id="name" value="{{ session['username'] }}" required readonly>
         
-          <label for="car_type">نوع السيارة:</label>
-          <input type="text" id="car_type" required>
+            <label for="car_type">نوع السيارة:</label>
+            <input type="text" id="car_type" required>
         
-          <label for="appointment_time">وقت الموعد:</label>
-          <input type="datetime-local" id="appointment_time" required>
+            <label for="appointment_time">وقت الموعد:</label>
+            <input type="datetime-local" id="appointment_time" required>
         
-          <button type="submit">احجز</button>
+            <button type="submit">احجز</button>
         </form>
         
         <div id="message" style="margin-top: 10px;"></div>
         <a href="/check_status">تاكد من حالة الحجز</a>
+        {% else %}
+        <p>يرجى تسجيل الدخول أولاً لحجز الموعد.</p>
+        <a href="{{ url_for('login') }}">تسجيل الدخول</a> | <a href="{{ url_for('register') }}">إنشاء حساب</a>
+        {% endif %}
     </div>
 
+
     <script>
-        document.addEventListener('DOMContentLoaded', function () {
-          const form = document.getElementById('appointment-form');
-          const messageDiv = document.getElementById('message');
-        
-          form.addEventListener('submit', async function (e) {
+        // إرسال الطلب لحجز الموعد
+        document.getElementById("appointment-form").addEventListener("submit", function(e) {
             e.preventDefault();
-        
-            const name = document.getElementById('name').value;
-            const carType = document.getElementById('car_type').value;
-            const appointmentTime = document.getElementById('appointment_time').value;
-        
-            try {
-              const response = await fetch('/book_appointment', {
-                method: 'POST',
+
+            const name = document.getElementById("name").value;
+            const car_type = document.getElementById("car_type").value;
+            const appointment_time = document.getElementById("appointment_time").value;
+
+            fetch("/book_appointment", {
+                method: "POST",
                 headers: {
-                  'Content-Type': 'application/json'
+                    "Content-Type": "application/json",
                 },
                 body: JSON.stringify({
-                  name: name,
-                  car_type: carType,
-                  appointment_time: appointmentTime
-                })
-              });
-        
-              const data = await response.json();
-              messageDiv.textContent = data.message;
-              messageDiv.style.color = 'green';
-              form.reset();
-            } catch (error) {
-              messageDiv.textContent = 'حدث خطأ أثناء الحجز. حاول مرة أخرى.';
-              messageDiv.style.color = 'red';
-            }
-          });
+                    name: name,
+                    car_type: car_type,
+                    appointment_time: appointment_time,
+                }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById("message").textContent = data.message;
+            })
+            .catch(error => {
+                document.getElementById("message").textContent = "حدث خطأ أثناء الحجز.";
+            });
         });
-        </script>               
+    </script>
+               
 </body>
 </html>
