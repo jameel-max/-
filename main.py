@@ -21,32 +21,26 @@ def init_db():
     conn = sqlite3.connect('appointments.db')
     c = conn.cursor()
 
-    c.execute('''
-        CREATE TABLE IF NOT EXISTS users (
+    c.execute('''CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             username TEXT UNIQUE,
             password TEXT
-        )
-    ''')
+        )''')
 
-    c.execute('''
-        CREATE TABLE IF NOT EXISTS appointments (
+    c.execute('''CREATE TABLE IF NOT EXISTS appointments (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT,
             car_type TEXT,
             appointment_time TEXT,
             status TEXT
-        )
-    ''')
+        )''')
 
-    c.execute('''
-        CREATE TABLE IF NOT EXISTS notifications (
+    c.execute('''CREATE TABLE IF NOT EXISTS notifications (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             user_name TEXT,
             message TEXT,
             is_read INTEGER DEFAULT 0
-        )
-    ''')
+        )''')
 
     conn.commit()
     conn.close()
@@ -214,6 +208,25 @@ def delete_appointment():
     conn.close()
 
     return jsonify({'success': True})
+
+# حذف جميع البيانات
+@app.route('/delete_all_data', methods=['POST'])
+def delete_all_data():
+    if not session.get('is_admin'):
+        return redirect(url_for('admin_login'))
+
+    conn = sqlite3.connect('appointments.db')
+    c = conn.cursor()
+
+    # مسح جميع البيانات من الجداول
+    c.execute('DELETE FROM appointments')
+    c.execute('DELETE FROM users')
+    c.execute('DELETE FROM notifications')
+
+    conn.commit()
+    conn.close()
+
+    return redirect(url_for('admin'))
 
 # صفحة التحقق من الحالة
 @app.route('/check_status')
