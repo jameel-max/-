@@ -240,18 +240,5 @@ def chat_global():
 def enter_name():
     return render_template('enter_name.html')
 
-@app.route('/send_message', methods=['POST'])
-def send_message():
-    sender = session.get('username', 'مستخدم مجهول')
-    message = request.json.get('message')
-
-    conn = sqlite3.connect('appointments.db')
-    c = conn.cursor()
-    c.execute('INSERT INTO chat (appointment_id, sender, message) VALUES (?, ?, ?)', (1, sender, message))
-    conn.commit()
-    conn.close()
-
-    return jsonify({'success': True})
-
 if __name__ == '__main__':
     app.run(debug=True)
